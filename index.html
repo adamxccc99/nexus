@@ -8,8 +8,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <!-- Puter.js CDN for keyless AI -->
-  <script src="https://js.puter.com/v2/"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -71,7 +69,7 @@
     <div class="p-4 border-t border-slate-800/60 bg-slate-950/40">
       <div class="flex items-center gap-2 text-xs text-slate-400">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>Engine: <strong id="current-engine-label" class="text-slate-200">Puter.js (Free)</strong></span>
+        <span>Engine: <strong id="current-engine-label" class="text-slate-200">Pollinations (Account Free)</strong></span>
       </div>
     </div>
   </aside>
@@ -102,7 +100,7 @@
             <i class="fa-solid fa-robot text-sm"></i>
           </div>
           <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none text-slate-200 text-sm leading-relaxed shadow-sm">
-            Hello! I am <strong>NEXUS AI</strong>. I excel at coding, architecture, debugging, and creative task solving. How can I assist you today?
+            Hello! I am <strong>NEXUS AI</strong>. I am fully active with zero logins or accounts needed. How can I assist you today?
           </div>
         </div>
       </div>
@@ -128,7 +126,7 @@
       <div class="max-w-4xl mx-auto w-full space-y-6">
         <div>
           <h2 class="text-xl font-bold text-slate-100">AI Image Generator</h2>
-          <p class="text-sm text-slate-400">Generate high-quality visuals instantly using cutting-edge diffusion models.</p>
+          <p class="text-sm text-slate-400">Generate high-quality visuals instantly with zero account required.</p>
         </div>
 
         <!-- Controls Form -->
@@ -172,7 +170,7 @@
           <div class="relative group w-full flex justify-center bg-slate-950 rounded-xl overflow-hidden min-h-[300px] items-center">
             <div id="img-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur z-10">
               <i class="fa-solid fa-circle-notch fa-spin text-3xl text-violet-500 mb-2"></i>
-              <p class="text-xs text-slate-400">Rendering high-res artwork...</p>
+              <p class="text-xs text-slate-400">Rendering artwork...</p>
             </div>
             <img id="generated-img" class="max-h-[600px] w-auto object-contain rounded-lg transition-opacity duration-300 opacity-0" alt="Generated Artwork" />
           </div>
@@ -228,14 +226,14 @@
       <div class="max-w-2xl mx-auto space-y-6">
         <div>
           <h2 class="text-xl font-bold text-slate-100">Engine & API Settings</h2>
-          <p class="text-sm text-slate-400">By default, NEXUS AI operates keylessly. You can optionally connect custom provider keys below.</p>
+          <p class="text-sm text-slate-400">Default operates account-free. You can optionally connect standard custom API providers below.</p>
         </div>
 
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
           <div>
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Active AI Backend</label>
             <select id="setting-provider" onchange="saveSettings()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500">
-              <option value="puter">Puter.js Free Engine (No Key Required)</option>
+              <option value="pollinations">Pollinations.ai (Account Free & Keyless)</option>
               <option value="custom">Custom API Key (OpenAI / Groq / OpenRouter)</option>
             </select>
           </div>
@@ -258,7 +256,7 @@
           </div>
 
           <button onclick="saveSettings()" class="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium text-sm rounded-xl transition-all shadow-md">
-            Save Engine Configuration
+            Save Configuration
           </button>
         </div>
       </div>
@@ -268,19 +266,16 @@
 
   <!-- Application Logic -->
   <script>
-    // State management
     let chatHistory = [];
     let isVoiceActive = false;
     let recognition = null;
 
-    // Load Settings on Start
     document.addEventListener('DOMContentLoaded', () => {
       loadSettings();
       runCodeSandbox();
       setupSpeechRecognition();
     });
 
-    // Navigation Switcher
     function switchTab(tabId) {
       document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -301,25 +296,34 @@
       const userText = inputEl.value.trim();
       if (!userText) return;
 
-      // Add user message
       appendMessage('user', userText);
       inputEl.value = '';
 
-      // Create AI loading placeholder
       const aiMsgId = 'msg-' + Date.now();
       appendMessage('ai', '<i class="fa-solid fa-circle-notch fa-spin text-violet-400"></i> Thinking...', aiMsgId);
 
-      const provider = localStorage.getItem('nexus_provider') || 'puter';
+      const provider = localStorage.getItem('nexus_provider') || 'pollinations';
 
       try {
         let aiResponseText = "";
 
-        if (provider === 'puter') {
-          // Use Puter.js free AI model
+        if (provider === 'pollinations') {
+          // Pollinations.ai Text API (No API keys or logins)
           chatHistory.push({ role: 'user', content: userText });
-          const response = await puter.ai.chat(chatHistory);
-          aiResponseText = typeof response === 'string' ? response : response.message.content;
+
+          const res = await fetch('https://text.pollinations.ai/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: chatHistory,
+              model: 'openai'
+            })
+          });
+
+          if (!res.ok) throw new Error('Pollinations service response error');
+          aiResponseText = await res.text();
           chatHistory.push({ role: 'assistant', content: aiResponseText });
+
         } else {
           // Custom API key endpoint
           const apiUrl = localStorage.getItem('nexus_api_url');
@@ -344,9 +348,8 @@
         }
 
         updateMessage(aiMsgId, formatResponse(aiResponseText));
-        speakText(aiResponseText.replace(/```[\s\S]*?```/g, 'Code block outputted.'));
       } catch (err) {
-        updateMessage(aiMsgId, `<span class="text-rose-400">Error: ${err.message || 'Failed to fetch AI response. Verify API settings.'}</span>`);
+        updateMessage(aiMsgId, `<span class="text-rose-400">Error: ${err.message || 'Failed to fetch AI response.'}</span>`);
       }
     }
 
@@ -383,7 +386,6 @@
     }
 
     function formatResponse(text) {
-      // Basic markdown formatting for code blocks
       return text
         .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs text-violet-300 my-2 overflow-x-auto"><code>$2</code></pre>')
         .replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1.5 py-0.5 rounded text-xs font-mono text-violet-300">$1</code>')
@@ -424,7 +426,6 @@
       loader.classList.remove('hidden');
       imgEl.classList.add('opacity-0');
 
-      // Pollinations AI URL Engine
       const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true`;
 
       imgEl.src = imageUrl;
@@ -461,7 +462,7 @@
       runCodeSandbox();
     }
 
-    // --- VOICE INPUT & SYNTHESIS ---
+    // --- SPEECH RECOGNITION (INPUT ONLY) ---
     function setupSpeechRecognition() {
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -493,14 +494,6 @@
       }
     }
 
-    function speakText(text) {
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text.substring(0, 200));
-        utterance.rate = 1.0;
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
     // --- SETTINGS MANAGEMENT ---
     function saveSettings() {
       const provider = document.getElementById('setting-provider').value;
@@ -514,12 +507,12 @@
         document.getElementById('current-engine-label').textContent = 'Custom API';
       } else {
         document.getElementById('custom-api-container').classList.add('hidden');
-        document.getElementById('current-engine-label').textContent = 'Puter.js (Free)';
+        document.getElementById('current-engine-label').textContent = 'Pollinations (Account Free)';
       }
     }
 
     function loadSettings() {
-      const provider = localStorage.getItem('nexus_provider') || 'puter';
+      const provider = localStorage.getItem('nexus_provider') || 'pollinations';
       document.getElementById('setting-provider').value = provider;
       document.getElementById('setting-api-url').value = localStorage.getItem('nexus_api_url') || '';
       document.getElementById('setting-api-key').value = localStorage.getItem('nexus_api_key') || '';

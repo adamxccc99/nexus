@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXUS AI Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Puter.js CDN for keyless AI -->
+  <script src="https://js.puter.com/v2/"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            nexus: { 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 900: '#0f172a' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col md:flex-row overflow-hidden selection:bg-violet-500 selection:text-white">
+
+  <!-- Sidebar Navigation -->
+  <aside class="w-full md:w-64 bg-slate-900/90 backdrop-blur border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between shrink-0 z-20">
+    <div>
+      <!-- Brand Logo -->
+      <div class="p-5 flex items-center gap-3 border-b border-slate-800/60">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
+          <i class="fa-solid font-bold text-xl fa-brain"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-none tracking-wide text-white">NEXUS AI</h1>
+          <span class="text-xs text-violet-400 font-medium tracking-wider uppercase">Studio Engine</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-3 space-y-1">
+        <button onclick="switchTab('chat')" id="tab-btn-chat" class="tab-btn active w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-violet-600/20 text-violet-300 border border-violet-500/30">
+          <i class="fa-solid fa-comments text-base"></i>
+          <span>AI Chat & Code</span>
+        </button>
+        <button onclick="switchTab('image')" id="tab-btn-image" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all border border-transparent">
+          <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+          <span>AI Image Studio</span>
+        </button>
+        <button onclick="switchTab('code')" id="tab-btn-code" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all border border-transparent">
+          <i class="fa-solid fa-code text-base"></i>
+          <span>Code Sandbox</span>
+        </button>
+        <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all border border-transparent">
+          <i class="fa-solid fa-sliders text-base"></i>
+          <span>API & Engine Settings</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Engine Status Footer -->
+    <div class="p-4 border-t border-slate-800/60 bg-slate-950/40">
+      <div class="flex items-center gap-2 text-xs text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>Engine: <strong id="current-engine-label" class="text-slate-200">Puter.js (Free)</strong></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 relative flex flex-col h-full bg-slate-950 overflow-hidden">
+
+    <!-- TAB 1: AI CHAT & CODE -->
+    <section id="view-chat" class="tab-view flex-1 flex flex-col h-full">
+      <!-- Chat Header -->
+      <header class="p-4 border-b border-slate-800/80 bg-slate-900/40 flex justify-between items-center">
+        <div>
+          <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+            <span>AI Assistant & Coding Wizard</span>
+          </h2>
+          <p class="text-xs text-slate-400">Ask programming questions, solve bugs, or brainstorm ideas.</p>
+        </div>
+        <button onclick="clearChat()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700/50">
+          <i class="fa-solid fa-trash-can mr-1"></i> Clear Session
+        </button>
+      </header>
+
+      <!-- Chat History -->
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <!-- System greeting -->
+        <div class="flex gap-3 max-w-3xl">
+          <div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white shrink-0">
+            <i class="fa-solid fa-robot text-sm"></i>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none text-slate-200 text-sm leading-relaxed shadow-sm">
+            Hello! I am <strong>NEXUS AI</strong>. I excel at coding, architecture, debugging, and creative task solving. How can I assist you today?
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input Area -->
+      <div class="p-4 border-t border-slate-800/80 bg-slate-900/30">
+        <form onsubmit="handleChatSubmit(event)" class="max-w-4xl mx-auto flex gap-2">
+          <div class="relative flex-1">
+            <textarea id="chat-input" rows="1" placeholder="Ask anything or request code (e.g., Build a responsive CSS card)..." class="w-full bg-slate-900 border border-slate-800 focus:border-violet-500 rounded-xl px-4 py-3 pr-12 text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none transition-all"></textarea>
+            <button type="button" onclick="toggleVoiceInput()" id="mic-btn" class="absolute right-3 top-2.5 text-slate-400 hover:text-violet-400 p-1 transition-colors" title="Voice Input">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+          </div>
+          <button type="submit" id="chat-send-btn" class="bg-violet-600 hover:bg-violet-500 text-white font-medium px-5 rounded-xl transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 2: AI IMAGE STUDIO -->
+    <section id="view-image" class="tab-view hidden flex-1 flex flex-col h-full overflow-y-auto p-4 md:p-6">
+      <div class="max-w-4xl mx-auto w-full space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-100">AI Image Generator</h2>
+          <p class="text-sm text-slate-400">Generate high-quality visuals instantly using cutting-edge diffusion models.</p>
+        </div>
+
+        <!-- Controls Form -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Prompt</label>
+            <textarea id="img-prompt" rows="3" placeholder="A futuristic cyberpunk hacker workspace with glowing neon blue interfaces, cinematic lighting, 8k resolution..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500 resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Model</label>
+              <select id="img-model" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500">
+                <option value="flux">Flux (High Precision)</option>
+                <option value="turbo">Turbo (Fast Real-time)</option>
+                <option value="artistic">Artistic Diffusion</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Aspect Ratio</label>
+              <select id="img-dimensions" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500">
+                <option value="1024x1024">Square (1:1 - 1024x1024)</option>
+                <option value="1280x720">Landscape (16:9 - 1280x720)</option>
+                <option value="720x1280">Portrait (9:16 - 720x1280)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Seed (Optional)</label>
+              <input type="number" id="img-seed" placeholder="Random" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" />
+            </div>
+          </div>
+
+          <button onclick="generateImage()" id="generate-img-btn" class="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-sparkles"></i>
+            <span>Generate Image</span>
+          </button>
+        </div>
+
+        <!-- Result Canvas / Output -->
+        <div id="img-result-card" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center gap-4">
+          <div class="relative group w-full flex justify-center bg-slate-950 rounded-xl overflow-hidden min-h-[300px] items-center">
+            <div id="img-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur z-10">
+              <i class="fa-solid fa-circle-notch fa-spin text-3xl text-violet-500 mb-2"></i>
+              <p class="text-xs text-slate-400">Rendering high-res artwork...</p>
+            </div>
+            <img id="generated-img" class="max-h-[600px] w-auto object-contain rounded-lg transition-opacity duration-300 opacity-0" alt="Generated Artwork" />
+          </div>
+          <div class="flex gap-3 w-full justify-end">
+            <a id="download-img-btn" target="_blank" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg transition-colors border border-slate-700/50 flex items-center gap-2">
+              <i class="fa-solid fa-download"></i> Download Image
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: CODE SANDBOX -->
+    <section id="view-code" class="tab-view hidden flex-1 flex flex-col h-full">
+      <header class="p-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+        <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Live HTML/CSS/JS Sandbox</span>
+        <div class="flex gap-2">
+          <button onclick="loadSampleCode()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg border border-slate-700">Sample Code</button>
+          <button onclick="runCodeSandbox()" class="px-4 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white rounded-lg shadow-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-play"></i> Run Code
+          </button>
+        </div>
+      </header>
+      <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0 overflow-hidden">
+        <!-- Editor Input -->
+        <div class="flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800">
+          <div class="bg-slate-900 px-4 py-1.5 border-b border-slate-800/80 text-xs text-slate-400 font-mono">Source Code</div>
+          <textarea id="sandbox-code-input" class="flex-1 bg-slate-950 p-4 text-xs font-mono text-violet-200 focus:outline-none resize-none leading-relaxed" spellcheck="false"><!-- Write HTML, CSS, or JS below -->
+<div class="card">
+  <h1>🚀 Welcome to NEXUS Sandbox</h1>
+  <p>Edit this code and hit <strong>Run Code</strong> to test live styling and behavior.</p>
+  <button onclick="alert('Hello from NEXUS AI!')">Click Me</button>
+</div>
+
+<style>
+  body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  .card { background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
+  h1 { color: #a78bfa; margin-top: 0; }
+  button { background: #7c3aed; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; margin-top: 1rem; font-weight: bold; }
+  button:hover { background: #6d28d9; }
+</style></textarea>
+        </div>
+        <!-- Live Frame -->
+        <div class="flex flex-col bg-white">
+          <div class="bg-slate-900 px-4 py-1.5 border-b border-slate-800 text-xs text-slate-400 font-mono">Live Preview</div>
+          <iframe id="sandbox-iframe" class="flex-1 w-full h-full border-none"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SETTINGS -->
+    <section id="view-settings" class="tab-view hidden flex-1 p-6 overflow-y-auto">
+      <div class="max-w-2xl mx-auto space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-100">Engine & API Settings</h2>
+          <p class="text-sm text-slate-400">By default, NEXUS AI operates keylessly. You can optionally connect custom provider keys below.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Active AI Backend</label>
+            <select id="setting-provider" onchange="saveSettings()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500">
+              <option value="puter">Puter.js Free Engine (No Key Required)</option>
+              <option value="custom">Custom API Key (OpenAI / Groq / OpenRouter)</option>
+            </select>
+          </div>
+
+          <div id="custom-api-container" class="space-y-4 hidden">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">API Base URL</label>
+              <input type="text" id="setting-api-url" placeholder="https://api.groq.com/openai/v1 or https://api.openai.com/v1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">API Key</label>
+              <input type="password" id="setting-api-key" placeholder="gsk_... or sk-..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Model Name</label>
+              <input type="text" id="setting-model-name" placeholder="llama-3.3-70b-versatile or gpt-4o-mini" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500" />
+            </div>
+          </div>
+
+          <button onclick="saveSettings()" class="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium text-sm rounded-xl transition-all shadow-md">
+            Save Engine Configuration
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    // State management
+    let chatHistory = [];
+    let isVoiceActive = false;
+    let recognition = null;
+
+    // Load Settings on Start
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      runCodeSandbox();
+      setupSpeechRecognition();
+    });
+
+    // Navigation Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-violet-600/20', 'text-violet-300', 'border-violet-500/30');
+        btn.classList.add('text-slate-400', 'border-transparent');
+      });
+
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      activeBtn.classList.add('active', 'bg-violet-600/20', 'text-violet-300', 'border-violet-500/30');
+      activeBtn.classList.remove('text-slate-400', 'border-transparent');
+    }
+
+    // --- AI CHAT SYSTEM ---
+    async function handleChatSubmit(e) {
+      e.preventDefault();
+      const inputEl = document.getElementById('chat-input');
+      const userText = inputEl.value.trim();
+      if (!userText) return;
+
+      // Add user message
+      appendMessage('user', userText);
+      inputEl.value = '';
+
+      // Create AI loading placeholder
+      const aiMsgId = 'msg-' + Date.now();
+      appendMessage('ai', '<i class="fa-solid fa-circle-notch fa-spin text-violet-400"></i> Thinking...', aiMsgId);
+
+      const provider = localStorage.getItem('nexus_provider') || 'puter';
+
+      try {
+        let aiResponseText = "";
+
+        if (provider === 'puter') {
+          // Use Puter.js free AI model
+          chatHistory.push({ role: 'user', content: userText });
+          const response = await puter.ai.chat(chatHistory);
+          aiResponseText = typeof response === 'string' ? response : response.message.content;
+          chatHistory.push({ role: 'assistant', content: aiResponseText });
+        } else {
+          // Custom API key endpoint
+          const apiUrl = localStorage.getItem('nexus_api_url');
+          const apiKey = localStorage.getItem('nexus_api_key');
+          const modelName = localStorage.getItem('nexus_model_name') || 'gpt-4o-mini';
+
+          chatHistory.push({ role: 'user', content: userText });
+          const res = await fetch(`${apiUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: modelName,
+              messages: chatHistory
+            })
+          });
+          const data = await res.json();
+          aiResponseText = data.choices[0].message.content;
+          chatHistory.push({ role: 'assistant', content: aiResponseText });
+        }
+
+        updateMessage(aiMsgId, formatResponse(aiResponseText));
+        speakText(aiResponseText.replace(/```[\s\S]*?```/g, 'Code block outputted.'));
+      } catch (err) {
+        updateMessage(aiMsgId, `<span class="text-rose-400">Error: ${err.message || 'Failed to fetch AI response. Verify API settings.'}</span>`);
+      }
+    }
+
+    function appendMessage(role, content, customId = null) {
+      const container = document.getElementById('chat-messages');
+      const wrapper = document.createElement('div');
+      wrapper.className = `flex gap-3 max-w-3xl ${role === 'user' ? 'ml-auto flex-row-reverse' : ''}`;
+      if (customId) wrapper.id = customId;
+
+      const avatar = role === 'user' 
+        ? `<div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0"><i class="fa-solid fa-user text-xs"></i></div>`
+        : `<div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white shrink-0"><i class="fa-solid fa-robot text-xs"></i></div>`;
+
+      const msgBg = role === 'user' 
+        ? 'bg-violet-600 text-white rounded-tr-none' 
+        : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none';
+
+      wrapper.innerHTML = `
+        ${avatar}
+        <div class="${msgBg} p-4 rounded-2xl text-sm leading-relaxed shadow-sm overflow-x-auto">
+          ${content}
+        </div>
+      `;
+      container.appendChild(wrapper);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function updateMessage(id, newContent) {
+      const el = document.getElementById(id);
+      if (el) {
+        const bubble = el.querySelector('div:last-child');
+        bubble.innerHTML = newContent;
+      }
+    }
+
+    function formatResponse(text) {
+      // Basic markdown formatting for code blocks
+      return text
+        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs text-violet-300 my-2 overflow-x-auto"><code>$2</code></pre>')
+        .replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1.5 py-0.5 rounded text-xs font-mono text-violet-300">$1</code>')
+        .replace(/\n/g, '<br/>');
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      document.getElementById('chat-messages').innerHTML = `
+        <div class="flex gap-3 max-w-3xl">
+          <div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white shrink-0">
+            <i class="fa-solid fa-robot text-sm"></i>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none text-slate-200 text-sm leading-relaxed shadow-sm">
+            Chat cleared! Ready for a new topic.
+          </div>
+        </div>`;
+    }
+
+    // --- AI IMAGE GENERATOR ---
+    function generateImage() {
+      const prompt = document.getElementById('img-prompt').value.trim();
+      if (!prompt) return alert('Please enter an image prompt first.');
+
+      const model = document.getElementById('img-model').value;
+      const dimensions = document.getElementById('img-dimensions').value.split('x');
+      const seed = document.getElementById('img-seed').value || Math.floor(Math.random() * 999999);
+
+      const width = dimensions[0];
+      const height = dimensions[1];
+
+      const resultCard = document.getElementById('img-result-card');
+      const loader = document.getElementById('img-loader');
+      const imgEl = document.getElementById('generated-img');
+      const downloadBtn = document.getElementById('download-img-btn');
+
+      resultCard.classList.remove('hidden');
+      loader.classList.remove('hidden');
+      imgEl.classList.add('opacity-0');
+
+      // Pollinations AI URL Engine
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true`;
+
+      imgEl.src = imageUrl;
+      downloadBtn.href = imageUrl;
+
+      imgEl.onload = () => {
+        loader.classList.add('hidden');
+        imgEl.classList.remove('opacity-0');
+      };
+    }
+
+    // --- CODE SANDBOX ---
+    function runCodeSandbox() {
+      const code = document.getElementById('sandbox-code-input').value;
+      const iframe = document.getElementById('sandbox-iframe');
+      iframe.srcdoc = code;
+    }
+
+    function loadSampleCode() {
+      document.getElementById('sandbox-code-input').value = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { background: #000; color: #0f0; font-family: monospace; text-align: center; padding-top: 20%; }
+    h2 { animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+</head>
+<body>
+  <h2>[ NEXUS CODE MATRIX ]</h2>
+  <p>System operational. Build anything.</p>
+</body>
+</html>`;
+      runCodeSandbox();
+    }
+
+    // --- VOICE INPUT & SYNTHESIS ---
+    function setupSpeechRecognition() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          document.getElementById('chat-input').value = transcript;
+          toggleVoiceInput();
+        };
+
+        recognition.onerror = () => toggleVoiceInput();
+      }
+    }
+
+    function toggleVoiceInput() {
+      if (!recognition) return alert('Speech recognition is not supported in this browser.');
+      const micBtn = document.getElementById('mic-btn');
+      if (!isVoiceActive) {
+        recognition.start();
+        isVoiceActive = true;
+        micBtn.classList.add('text-rose-500', 'animate-pulse');
+      } else {
+        recognition.stop();
+        isVoiceActive = false;
+        micBtn.classList.remove('text-rose-500', 'animate-pulse');
+      }
+    }
+
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text.substring(0, 200));
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // --- SETTINGS MANAGEMENT ---
+    function saveSettings() {
+      const provider = document.getElementById('setting-provider').value;
+      localStorage.setItem('nexus_provider', provider);
+
+      if (provider === 'custom') {
+        document.getElementById('custom-api-container').classList.remove('hidden');
+        localStorage.setItem('nexus_api_url', document.getElementById('setting-api-url').value.trim());
+        localStorage.setItem('nexus_api_key', document.getElementById('setting-api-key').value.trim());
+        localStorage.setItem('nexus_model_name', document.getElementById('setting-model-name').value.trim());
+        document.getElementById('current-engine-label').textContent = 'Custom API';
+      } else {
+        document.getElementById('custom-api-container').classList.add('hidden');
+        document.getElementById('current-engine-label').textContent = 'Puter.js (Free)';
+      }
+    }
+
+    function loadSettings() {
+      const provider = localStorage.getItem('nexus_provider') || 'puter';
+      document.getElementById('setting-provider').value = provider;
+      document.getElementById('setting-api-url').value = localStorage.getItem('nexus_api_url') || '';
+      document.getElementById('setting-api-key').value = localStorage.getItem('nexus_api_key') || '';
+      document.getElementById('setting-model-name').value = localStorage.getItem('nexus_model_name') || '';
+
+      if (provider === 'custom') {
+        document.getElementById('custom-api-container').classList.remove('hidden');
+        document.getElementById('current-engine-label').textContent = 'Custom API';
+      }
+    }
+  </script>
+</body>
+</html>

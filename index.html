@@ -4,524 +4,880 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NEXUS AI Studio</title>
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
           colors: {
-            nexus: { 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 900: '#0f172a' }
+            nxDark: {
+              bg: '#09090b',
+              surface: '#18181b',
+              border: '#27272a',
+              hover: '#27272a',
+              pill: '#27272a'
+            },
+            nxLight: {
+              bg: '#ffffff',
+              surface: '#f4f4f5',
+              border: '#e4e4e7',
+              hover: '#e4e4e7',
+              pill: '#e4e4e7'
+            }
           }
         }
       }
     };
   </script>
+
   <style>
-    /* Custom scrollbars */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #090d16; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .dark ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 9999px; }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Interactive Voice Mode Blue Orb */
+    .orb-wrapper {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .blue-orb {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #a5f3fc 0%, #3b82f6 30%, #1d4ed8 75%, #0284c7 100%);
+      box-shadow: 
+        0 0 35px rgba(59, 130, 246, 0.7),
+        0 0 70px rgba(29, 78, 216, 0.5),
+        0 0 110px rgba(6, 182, 212, 0.4),
+        inset 0 0 30px rgba(255, 255, 255, 0.85);
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      animation: orbIdle 3.5s infinite ease-in-out;
+    }
+
+    @keyframes orbIdle {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 35px rgba(59, 130, 246, 0.7), 0 0 70px rgba(29, 78, 216, 0.5);
+      }
+      50% {
+        transform: scale(1.06);
+        box-shadow: 0 0 55px rgba(59, 130, 246, 0.9), 0 0 95px rgba(6, 182, 212, 0.7);
+      }
+    }
+
+    /* Shaking animation when talking */
+    .blue-orb.speaking {
+      animation: orbShake 0.12s infinite alternate ease-in-out !important;
+      box-shadow: 
+        0 0 75px rgba(59, 130, 246, 1),
+        0 0 135px rgba(147, 197, 253, 0.95),
+        inset 0 0 45px rgba(255, 255, 255, 0.95);
+    }
+
+    @keyframes orbShake {
+      0% { transform: scale(1.14) translate(-4px, 3px) rotate(-1.5deg); }
+      100% { transform: scale(1.26) translate(4px, -3px) rotate(1.5deg); }
+    }
+
+    .blue-orb.listening {
+      animation: orbListen 1.1s infinite ease-in-out;
+    }
+
+    @keyframes orbListen {
+      0%, 100% { transform: scale(1.02); filter: brightness(1.1); }
+      50% { transform: scale(1.18); filter: brightness(1.35); }
+    }
+
+    .aura-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      animation: ringPulse 2.8s infinite linear;
+    }
+
+    @keyframes ringPulse {
+      0% { width: 150px; height: 150px; opacity: 0.9; }
+      100% { width: 350px; height: 350px; opacity: 0; }
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col md:flex-row overflow-hidden selection:bg-violet-500 selection:text-white">
 
-  <!-- Sidebar Navigation -->
-  <aside class="w-full md:w-64 bg-slate-900/90 backdrop-blur border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between shrink-0 z-20">
-    <div>
-      <!-- Brand Logo -->
-      <div class="p-5 flex items-center gap-3 border-b border-slate-800/60">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
-          <i class="fa-solid font-bold text-xl fa-brain"></i>
-        </div>
-        <div>
-          <h1 class="font-bold text-lg leading-none tracking-wide text-white">NEXUS AI</h1>
-          <span class="text-xs text-violet-400 font-medium tracking-wider uppercase">Studio Engine</span>
-        </div>
+<body class="bg-nxDark-bg dark:bg-nxDark-bg text-slate-100 dark:text-slate-100 font-sans h-screen flex overflow-hidden selection:bg-blue-600 selection:text-white transition-colors duration-200">
+
+  <!-- Left Sidebar Navigation -->
+  <aside id="sidebar" class="w-64 bg-nxDark-bg dark:bg-nxDark-bg border-r border-nxDark-border dark:border-nxDark-border flex flex-col justify-between shrink-0 transition-all duration-300 z-30 md:static fixed inset-y-0 left-0 -translate-x-full md:translate-x-0">
+    <div class="flex flex-col h-full overflow-hidden">
+      
+      <!-- New Chat Button -->
+      <div class="p-3 flex items-center justify-between">
+        <button onclick="createNewChat()" class="flex-1 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl hover:bg-nxDark-hover text-sm font-medium transition-colors text-slate-200 border border-nxDark-border/80">
+          <i class="fa-solid fa-plus text-xs text-blue-400"></i>
+          <span>New chat</span>
+        </button>
+        <button onclick="toggleSidebar()" class="md:hidden ml-2 p-2 rounded-xl hover:bg-nxDark-hover text-slate-400">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
       </div>
 
-      <!-- Navigation Links -->
-      <nav class="p-3 space-y-1">
-        <button onclick="switchTab('chat')" id="tab-btn-chat" class="tab-btn active w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-violet-600/20 text-violet-300 border border-violet-500/30">
-          <i class="fa-solid fa-comments text-base"></i>
-          <span>AI Chat & Code</span>
-        </button>
-        <button onclick="switchTab('image')" id="tab-btn-image" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all border border-transparent">
-          <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
-          <span>AI Image Studio</span>
-        </button>
-        <button onclick="switchTab('code')" id="tab-btn-code" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all border border-transparent">
-          <i class="fa-solid fa-code text-base"></i>
-          <span>Code Sandbox</span>
-        </button>
-        <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all border border-transparent">
-          <i class="fa-solid fa-sliders text-base"></i>
-          <span>API & Engine Settings</span>
-        </button>
-      </nav>
+      <!-- Recents Header -->
+      <div class="px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Recents</div>
+      
+      <!-- Chat History Stream -->
+      <div id="chat-history-list" class="flex-1 overflow-y-auto px-2 space-y-1 no-scrollbar">
+        <!-- Generated dynamically -->
+      </div>
     </div>
 
-    <!-- Engine Status Footer -->
-    <div class="p-4 border-t border-slate-800/60 bg-slate-950/40">
-      <div class="flex items-center gap-2 text-xs text-slate-400">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>Engine: <strong id="current-engine-label" class="text-slate-200">Pollinations (Account Free)</strong></span>
+    <!-- User Profile Footer (ChatGPT Style: Nexus User / Free) -->
+    <div class="p-3 border-t border-nxDark-border flex items-center justify-between">
+      <div class="flex items-center gap-2.5 px-2 py-1.5 overflow-hidden">
+        <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-md shadow-blue-600/30">
+          NX
+        </div>
+        <div class="flex flex-col truncate">
+          <span class="text-xs font-semibold text-slate-200 truncate">Nexus</span>
+          <span class="text-[11px] text-slate-400 font-medium truncate">Free</span>
+        </div>
       </div>
+      <button onclick="openSettingsModal()" title="Settings" class="p-2 rounded-xl hover:bg-nxDark-hover text-slate-400 hover:text-slate-200 transition-colors">
+        <i class="fa-solid fa-gear text-sm"></i>
+      </button>
     </div>
   </aside>
 
-  <!-- Main Content Area -->
-  <main class="flex-1 relative flex flex-col h-full bg-slate-950 overflow-hidden">
-
-    <!-- TAB 1: AI CHAT & CODE -->
-    <section id="view-chat" class="tab-view flex-1 flex flex-col h-full">
-      <!-- Chat Header -->
-      <header class="p-4 border-b border-slate-800/80 bg-slate-900/40 flex justify-between items-center">
-        <div>
-          <h2 class="font-semibold text-slate-200 flex items-center gap-2">
-            <span>AI Assistant & Coding Wizard</span>
-          </h2>
-          <p class="text-xs text-slate-400">Ask programming questions, solve bugs, or brainstorm ideas.</p>
-        </div>
-        <button onclick="clearChat()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700/50">
-          <i class="fa-solid fa-trash-can mr-1"></i> Clear Session
+  <!-- Main Viewport Workspace -->
+  <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-nxDark-bg">
+    
+    <!-- Top Header -->
+    <header class="h-14 px-4 flex items-center justify-between z-10 shrink-0 border-b border-nxDark-border/40">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="p-2 rounded-xl hover:bg-nxDark-hover text-slate-400 transition-colors">
+          <i class="fa-solid fa-bars-staggered text-sm"></i>
         </button>
-      </header>
-
-      <!-- Chat History -->
-      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-        <!-- System greeting -->
-        <div class="flex gap-3 max-w-3xl">
-          <div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white shrink-0">
-            <i class="fa-solid fa-robot text-sm"></i>
+        
+        <!-- NEXUS Clean Branding -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-extrabold shadow-sm">
+            N
           </div>
-          <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none text-slate-200 text-sm leading-relaxed shadow-sm">
-            Hello! I am <strong>NEXUS AI</strong>. I am fully active with zero logins or accounts needed. How can I assist you today?
-          </div>
+          <span class="font-bold text-base tracking-wide text-slate-100">NEXUS</span>
         </div>
       </div>
 
-      <!-- Chat Input Area -->
-      <div class="p-4 border-t border-slate-800/80 bg-slate-900/30">
-        <form onsubmit="handleChatSubmit(event)" class="max-w-4xl mx-auto flex gap-2">
-          <div class="relative flex-1">
-            <textarea id="chat-input" rows="1" placeholder="Ask anything or request code (e.g., Build a responsive CSS card)..." class="w-full bg-slate-900 border border-slate-800 focus:border-violet-500 rounded-xl px-4 py-3 pr-12 text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none transition-all"></textarea>
-            <button type="button" onclick="toggleVoiceInput()" id="mic-btn" class="absolute right-3 top-2.5 text-slate-400 hover:text-violet-400 p-1 transition-colors" title="Voice Input">
-              <i class="fa-solid fa-microphone"></i>
+      <!-- Right Header Tools -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTheme()" id="theme-toggle-btn" title="Toggle Light/Dark Theme" class="p-2 rounded-xl hover:bg-nxDark-hover text-slate-400 hover:text-slate-200 transition-colors">
+          <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+        </button>
+        <button onclick="openSettingsModal()" title="Settings" class="p-2 rounded-xl hover:bg-nxDark-hover text-slate-400 hover:text-slate-200 transition-colors">
+          <i class="fa-solid fa-sliders text-sm"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Chat Messages Viewport -->
+    <div id="chat-viewport" class="flex-1 overflow-y-auto px-4 md:px-0 flex flex-col items-center relative">
+      
+      <!-- Welcome Screen (When empty) -->
+      <div id="welcome-screen" class="my-auto flex flex-col items-center justify-center text-center px-4 max-w-xl py-12">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-3xl font-extrabold mb-6 shadow-xl shadow-blue-500/20">
+          N
+        </div>
+        <h2 class="text-2xl md:text-3xl font-bold text-slate-100 mb-2 tracking-tight">Ready when you are.</h2>
+        <p class="text-xs md:text-sm text-slate-400 mb-8 max-w-md">What would you like to explore or create today?</p>
+        
+        <!-- Minimal Suggestion Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
+          <button onclick="useStarterPrompt('Write a clean JavaScript function to sort an array of objects by date')" class="p-3.5 rounded-2xl bg-nxDark-surface hover:bg-nxDark-hover border border-nxDark-border/80 text-left text-xs transition-all flex flex-col justify-between group">
+            <span class="font-semibold text-slate-200 mb-1 group-hover:text-blue-400">Write JavaScript Code</span>
+            <span class="text-slate-400 text-[11px]">Object array sorting snippet</span>
+          </button>
+          <button onclick="useStarterPrompt('Generate an image of a majestic floating glass city in space')" class="p-3.5 rounded-2xl bg-nxDark-surface hover:bg-nxDark-hover border border-nxDark-border/80 text-left text-xs transition-all flex flex-col justify-between group">
+            <span class="font-semibold text-slate-200 mb-1 group-hover:text-blue-400">Generate Artwork</span>
+            <span class="text-slate-400 text-[11px]">Floating glass city in space</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream Container -->
+      <div id="messages-container" class="w-full max-w-3xl space-y-6 py-6 hidden">
+        <!-- Messages populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Bottom Input Area (ChatGPT / Gemini Style) -->
+    <div class="w-full px-4 pb-4 md:pb-6 flex justify-center shrink-0">
+      <div class="w-full max-w-3xl relative">
+        
+        <!-- Attached File Chip -->
+        <div id="file-chip" class="hidden mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-950/80 border border-blue-800/80 text-xs text-blue-300">
+          <i class="fa-solid fa-paperclip text-blue-400"></i>
+          <span id="file-chip-name" class="font-medium truncate max-w-[200px]">document.txt</span>
+          <button onclick="removeAttachedFile()" class="ml-1 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Plus Action Popup Menu -->
+        <div id="plus-menu" class="hidden absolute bottom-full left-0 mb-2 w-56 rounded-2xl bg-nxDark-surface border border-nxDark-border shadow-2xl p-1.5 z-30">
+          <button onclick="openImageModal()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-nxDark-hover text-xs font-medium text-slate-200 transition-colors">
+            <i class="fa-solid fa-wand-magic-sparkles text-cyan-400 text-sm"></i>
+            <span>Generate AI Image</span>
+          </button>
+          <button onclick="triggerFileInput()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-nxDark-hover text-xs font-medium text-slate-200 transition-colors">
+            <i class="fa-solid fa-paperclip text-blue-400 text-sm"></i>
+            <span>Attach File / Document</span>
+          </button>
+          <button onclick="startVoiceChatMode()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-nxDark-hover text-xs font-medium text-slate-200 transition-colors">
+            <i class="fa-solid fa-waveform-lines text-indigo-400 text-sm"></i>
+            <span>Voice Chat Mode</span>
+          </button>
+        </div>
+        <input type="file" id="file-input" class="hidden" accept=".txt,.js,.py,.csv,.md,.html,.json,.css,.ts" onchange="handleFileSelect(event)" />
+
+        <!-- Floating Action Pill -->
+        <div class="relative bg-nxDark-surface border border-nxDark-border rounded-3xl shadow-xl flex items-end p-2 transition-all focus-within:border-slate-500">
+          
+          <!-- Plus Button -->
+          <button onclick="togglePlusMenu()" title="Tools & Attachments" class="p-2.5 rounded-full hover:bg-nxDark-hover text-slate-400 hover:text-slate-200 transition-colors shrink-0">
+            <i class="fa-solid fa-plus text-base"></i>
+          </button>
+
+          <!-- Input Textarea -->
+          <textarea id="user-input" rows="1" placeholder="Ask NEXUS..." class="flex-1 bg-transparent border-0 focus:outline-none focus:ring-0 text-sm text-slate-100 placeholder-slate-500 resize-none px-3 py-2.5 max-h-36 no-scrollbar" onkeydown="handleKeyDown(event)" oninput="autoExpandTextarea(this)"></textarea>
+
+          <!-- Action Buttons (Mic & Send) -->
+          <div class="flex items-center gap-1.5 shrink-0 pr-1">
+            <button onclick="startVoiceChatMode()" title="Voice Mode" class="p-2.5 rounded-full hover:bg-nxDark-hover text-slate-400 hover:text-blue-400 transition-colors">
+              <i class="fa-solid fa-microphone text-base"></i>
+            </button>
+            
+            <button onclick="sendPrompt()" id="send-btn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-white text-slate-900 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+              <i class="fa-solid fa-arrow-up text-sm font-bold"></i>
             </button>
           </div>
-          <button type="submit" id="chat-send-btn" class="bg-violet-600 hover:bg-violet-500 text-white font-medium px-5 rounded-xl transition-all shadow-lg shadow-violet-600/20 flex items-center justify-center shrink-0">
-            <i class="fa-solid fa-paper-plane"></i>
-          </button>
-        </form>
-      </div>
-    </section>
 
-    <!-- TAB 2: AI IMAGE STUDIO -->
-    <section id="view-image" class="tab-view hidden flex-1 flex flex-col h-full overflow-y-auto p-4 md:p-6">
-      <div class="max-w-4xl mx-auto w-full space-y-6">
-        <div>
-          <h2 class="text-xl font-bold text-slate-100">AI Image Generator</h2>
-          <p class="text-sm text-slate-400">Generate high-quality visuals instantly with zero account required.</p>
-        </div>
-
-        <!-- Controls Form -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Prompt</label>
-            <textarea id="img-prompt" rows="3" placeholder="A futuristic cyberpunk hacker workspace with glowing neon blue interfaces, cinematic lighting, 8k resolution..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500 resize-none"></textarea>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Model</label>
-              <select id="img-model" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500">
-                <option value="flux">Flux (High Precision)</option>
-                <option value="turbo">Turbo (Fast Real-time)</option>
-                <option value="artistic">Artistic Diffusion</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Aspect Ratio</label>
-              <select id="img-dimensions" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500">
-                <option value="1024x1024">Square (1:1 - 1024x1024)</option>
-                <option value="1280x720">Landscape (16:9 - 1280x720)</option>
-                <option value="720x1280">Portrait (9:16 - 720x1280)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Seed (Optional)</label>
-              <input type="number" id="img-seed" placeholder="Random" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500" />
-            </div>
-          </div>
-
-          <button onclick="generateImage()" id="generate-img-btn" class="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2">
-            <i class="fa-solid fa-sparkles"></i>
-            <span>Generate Image</span>
-          </button>
-        </div>
-
-        <!-- Result Canvas / Output -->
-        <div id="img-result-card" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center gap-4">
-          <div class="relative group w-full flex justify-center bg-slate-950 rounded-xl overflow-hidden min-h-[300px] items-center">
-            <div id="img-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur z-10">
-              <i class="fa-solid fa-circle-notch fa-spin text-3xl text-violet-500 mb-2"></i>
-              <p class="text-xs text-slate-400">Rendering artwork...</p>
-            </div>
-            <img id="generated-img" class="max-h-[600px] w-auto object-contain rounded-lg transition-opacity duration-300 opacity-0" alt="Generated Artwork" />
-          </div>
-          <div class="flex gap-3 w-full justify-end">
-            <a id="download-img-btn" target="_blank" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg transition-colors border border-slate-700/50 flex items-center gap-2">
-              <i class="fa-solid fa-download"></i> Download Image
-            </a>
-          </div>
         </div>
       </div>
-    </section>
-
-    <!-- TAB 3: CODE SANDBOX -->
-    <section id="view-code" class="tab-view hidden flex-1 flex flex-col h-full">
-      <header class="p-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-        <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Live HTML/CSS/JS Sandbox</span>
-        <div class="flex gap-2">
-          <button onclick="loadSampleCode()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg border border-slate-700">Sample Code</button>
-          <button onclick="runCodeSandbox()" class="px-4 py-1 bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white rounded-lg shadow-sm flex items-center gap-1.5">
-            <i class="fa-solid fa-play"></i> Run Code
-          </button>
-        </div>
-      </header>
-      <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0 overflow-hidden">
-        <!-- Editor Input -->
-        <div class="flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800">
-          <div class="bg-slate-900 px-4 py-1.5 border-b border-slate-800/80 text-xs text-slate-400 font-mono">Source Code</div>
-          <textarea id="sandbox-code-input" class="flex-1 bg-slate-950 p-4 text-xs font-mono text-violet-200 focus:outline-none resize-none leading-relaxed" spellcheck="false"><!-- Write HTML, CSS, or JS below -->
-<div class="card">
-  <h1>🚀 Welcome to NEXUS Sandbox</h1>
-  <p>Edit this code and hit <strong>Run Code</strong> to test live styling and behavior.</p>
-  <button onclick="alert('Hello from NEXUS AI!')">Click Me</button>
-</div>
-
-<style>
-  body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-  .card { background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-  h1 { color: #a78bfa; margin-top: 0; }
-  button { background: #7c3aed; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; margin-top: 1rem; font-weight: bold; }
-  button:hover { background: #6d28d9; }
-</style></textarea>
-        </div>
-        <!-- Live Frame -->
-        <div class="flex flex-col bg-white">
-          <div class="bg-slate-900 px-4 py-1.5 border-b border-slate-800 text-xs text-slate-400 font-mono">Live Preview</div>
-          <iframe id="sandbox-iframe" class="flex-1 w-full h-full border-none"></iframe>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: SETTINGS -->
-    <section id="view-settings" class="tab-view hidden flex-1 p-6 overflow-y-auto">
-      <div class="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h2 class="text-xl font-bold text-slate-100">Engine & API Settings</h2>
-          <p class="text-sm text-slate-400">Default operates account-free. You can optionally connect standard custom API providers below.</p>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Active AI Backend</label>
-            <select id="setting-provider" onchange="saveSettings()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500">
-              <option value="pollinations">Pollinations.ai (Account Free & Keyless)</option>
-              <option value="custom">Custom API Key (OpenAI / Groq / OpenRouter)</option>
-            </select>
-          </div>
-
-          <div id="custom-api-container" class="space-y-4 hidden">
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">API Base URL</label>
-              <input type="text" id="setting-api-url" placeholder="https://api.groq.com/openai/v1 or https://api.openai.com/v1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500" />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">API Key</label>
-              <input type="password" id="setting-api-key" placeholder="gsk_... or sk-..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500" />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Model Name</label>
-              <input type="text" id="setting-model-name" placeholder="llama-3.3-70b-versatile or gpt-4o-mini" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500" />
-            </div>
-          </div>
-
-          <button onclick="saveSettings()" class="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium text-sm rounded-xl transition-all shadow-md">
-            Save Configuration
-          </button>
-        </div>
-      </div>
-    </section>
+    </div>
 
   </main>
 
-  <!-- Application Logic -->
-  <script>
-    let chatHistory = [];
-    let isVoiceActive = false;
-    let recognition = null;
+  <!-- Interactive Voice Chat Screen (Glowing Blue Orb) -->
+  <div id="voice-modal" class="hidden fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur-2xl flex flex-col items-center justify-between p-8 transition-opacity duration-300">
+    <!-- Header -->
+    <div class="w-full max-w-xl flex justify-between items-center text-slate-400 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span>
+        <span class="font-bold tracking-wider uppercase text-slate-200">NEXUS Voice Mode</span>
+      </div>
+      <span id="voice-status" class="text-slate-400 font-medium">Listening...</span>
+    </div>
 
+    <!-- Glowing Dynamic Blue Orb -->
+    <div class="my-auto flex flex-col items-center justify-center relative">
+      <div class="aura-ring"></div>
+      <div class="orb-wrapper">
+        <div id="voice-orb" class="blue-orb listening"></div>
+      </div>
+      <p id="voice-transcript" class="mt-10 text-sm md:text-base text-slate-200 max-w-lg text-center font-medium min-h-[48px] px-4 leading-relaxed">
+        Speak now...
+      </p>
+    </div>
+
+    <!-- Voice Control Bar -->
+    <div class="flex items-center gap-4">
+      <button onclick="toggleVoiceMute()" id="voice-mute-btn" class="w-12 h-12 rounded-full bg-zinc-800 hover:bg-zinc-700 text-slate-300 flex items-center justify-center transition-colors">
+        <i class="fa-solid fa-microphone text-base"></i>
+      </button>
+      <button onclick="closeVoiceChatMode()" class="w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-lg shadow-rose-600/30 transition-all">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Image Generator Modal -->
+  <div id="image-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-nxDark-surface border border-nxDark-border rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-nxDark-border pb-3">
+        <h3 class="text-base font-semibold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i>
+          <span>Generate AI Artwork</span>
+        </h3>
+        <button onclick="closeImageModal()" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Image Description</label>
+        <textarea id="img-prompt-input" rows="3" placeholder="A futuristic cyberpunk city under heavy neon rain, ultra detailed..." class="w-full bg-nxDark-bg border border-nxDark-border rounded-2xl p-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-none"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeImageModal()" class="px-4 py-2 rounded-xl border border-nxDark-border text-xs text-slate-300 hover:bg-nxDark-hover">Cancel</button>
+        <button onclick="confirmImageGeneration()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white shadow-md shadow-blue-600/30">Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-nxDark-surface border border-nxDark-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+      <div class="flex justify-between items-center border-b border-nxDark-border pb-3">
+        <h3 class="text-base font-semibold text-slate-100">Settings</h3>
+        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Theme Switcher -->
+      <div class="flex items-center justify-between py-1">
+        <div>
+          <h4 class="text-xs font-semibold text-slate-200">Appearance Theme</h4>
+          <p class="text-[11px] text-slate-400">Toggle between Dark and Light mode</p>
+        </div>
+        <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl border border-nxDark-border text-xs font-medium text-slate-200 hover:bg-nxDark-hover">
+          Switch Theme
+        </button>
+      </div>
+
+      <!-- System Persona Prompt -->
+      <div class="space-y-1.5 pt-2 border-t border-nxDark-border">
+        <label class="block text-xs font-semibold text-slate-200">Custom System Instruction</label>
+        <textarea id="system-prompt-input" rows="2" placeholder="You are NEXUS, a helpful and concise AI assistant..." class="w-full bg-nxDark-bg border border-nxDark-border rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 resize-none"></textarea>
+      </div>
+
+      <!-- Clear Chat History -->
+      <div class="pt-2 border-t border-nxDark-border flex justify-between items-center">
+        <span class="text-xs text-rose-400 font-medium">Clear All Conversations</span>
+        <button onclick="clearAllChats()" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-semibold transition-colors">
+          Clear All
+        </button>
+      </div>
+
+      <div class="pt-3 flex justify-end border-t border-nxDark-border">
+        <button onclick="saveSettings()" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-blue-600/20">
+          Save & Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // App State Management
+    let chats = JSON.parse(localStorage.getItem('nexus_chats_v3') || '[]');
+    let currentChatId = null;
+    let attachedFile = null;
+    let settings = JSON.parse(localStorage.getItem('nexus_settings_v3') || '{"theme":"dark","systemPrompt":"You are NEXUS, an intelligent, helpful, and ultra-concise AI assistant."}');
+
+    // Voice Engine State
+    let recognition = null;
+    let isVoiceActive = false;
+    let isVoiceMuted = false;
+    let synthesisVoice = null;
+
+    // Initialization
     document.addEventListener('DOMContentLoaded', () => {
-      loadSettings();
-      runCodeSandbox();
-      setupSpeechRecognition();
+      applyTheme(settings.theme);
+      renderChatHistory();
+
+      if (chats.length > 0) {
+        loadChat(chats[0].id);
+      } else {
+        createNewChat();
+      }
+
+      // Pre-load speech voices
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          const voices = window.speechSynthesis.getVoices();
+          synthesisVoice = voices.find(v => v.lang.includes('en')) || voices[0];
+        };
+      }
     });
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active', 'bg-violet-600/20', 'text-violet-300', 'border-violet-500/30');
-        btn.classList.add('text-slate-400', 'border-transparent');
+    function applyTheme(theme) {
+      const html = document.documentElement;
+      const themeIcon = document.getElementById('theme-icon');
+
+      if (theme === 'light') {
+        html.classList.remove('dark');
+        if (themeIcon) themeIcon.className = 'fa-solid fa-sun text-amber-500';
+      } else {
+        html.classList.add('dark');
+        if (themeIcon) themeIcon.className = 'fa-solid fa-moon text-blue-400';
+      }
+    }
+
+    function toggleTheme() {
+      settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(settings.theme);
+      saveSettingsToStorage();
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('-translate-x-full');
+    }
+
+    function autoExpandTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendPrompt();
+      }
+    }
+
+    function createNewChat() {
+      const newChat = {
+        id: 'chat_' + Date.now(),
+        title: 'New Chat',
+        messages: []
+      };
+      chats.unshift(newChat);
+      saveChatsToStorage();
+      renderChatHistory();
+      loadChat(newChat.id);
+    }
+
+    function saveChatsToStorage() {
+      localStorage.setItem('nexus_chats_v3', JSON.stringify(chats));
+    }
+
+    function loadChat(chatId) {
+      currentChatId = chatId;
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return;
+
+      renderChatHistory();
+
+      const welcomeScreen = document.getElementById('welcome-screen');
+      const messagesContainer = document.getElementById('messages-container');
+
+      if (chat.messages.length === 0) {
+        welcomeScreen.classList.remove('hidden');
+        messagesContainer.classList.add('hidden');
+        messagesContainer.innerHTML = '';
+      } else {
+        welcomeScreen.classList.add('hidden');
+        messagesContainer.classList.remove('hidden');
+        renderMessages(chat.messages);
+      }
+    }
+
+    function renderChatHistory() {
+      const listEl = document.getElementById('chat-history-list');
+      listEl.innerHTML = '';
+
+      chats.forEach(chat => {
+        const isActive = chat.id === currentChatId;
+        const item = document.createElement('div');
+        item.className = `group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-colors ${isActive ? 'bg-nxDark-hover text-slate-100 font-semibold' : 'text-slate-400 hover:bg-nxDark-hover/60 hover:text-slate-200'}`;
+        item.onclick = () => loadChat(chat.id);
+
+        item.innerHTML = `
+          <div class="flex items-center gap-2 truncate">
+            <i class="fa-regular fa-comment text-slate-500"></i>
+            <span class="truncate max-w-[130px]">${chat.title}</span>
+          </div>
+          <button onclick="deleteChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 p-1">
+            <i class="fa-solid fa-trash-can text-[11px]"></i>
+          </button>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    function deleteChat(e, chatId) {
+      e.stopPropagation();
+      chats = chats.filter(c => c.id !== chatId);
+      saveChatsToStorage();
+      if (chats.length > 0) {
+        loadChat(chats[0].id);
+      } else {
+        createNewChat();
+      }
+    }
+
+    function clearAllChats() {
+      chats = [];
+      saveChatsToStorage();
+      createNewChat();
+      closeSettingsModal();
+    }
+
+    function useStarterPrompt(text) {
+      document.getElementById('user-input').value = text;
+      sendPrompt();
+    }
+
+    function renderMessages(messages) {
+      const container = document.getElementById('messages-container');
+      container.innerHTML = '';
+
+      messages.forEach(msg => {
+        const isUser = msg.role === 'user';
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex gap-3 md:gap-4 ${isUser ? 'justify-end' : 'justify-start'}`;
+
+        if (isUser) {
+          wrapper.innerHTML = `
+            <div class="max-w-[85%] bg-nxDark-pill text-slate-100 px-4 py-3 rounded-2xl rounded-tr-none text-sm leading-relaxed shadow-sm">
+              ${escapeHtml(msg.content)}
+            </div>
+          `;
+        } else {
+          wrapper.innerHTML = `
+            <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-1">
+              N
+            </div>
+            <div class="flex-1 max-w-[90%] text-slate-200 text-sm leading-relaxed space-y-2 overflow-x-auto">
+              ${formatMarkdown(msg.content)}
+            </div>
+          `;
+        }
+        container.appendChild(wrapper);
       });
 
-      document.getElementById(`view-${tabId}`).classList.remove('hidden');
-      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
-      activeBtn.classList.add('active', 'bg-violet-600/20', 'text-violet-300', 'border-violet-500/30');
-      activeBtn.classList.remove('text-slate-400', 'border-transparent');
+      const viewport = document.getElementById('chat-viewport');
+      viewport.scrollTop = viewport.scrollHeight;
     }
 
-    // --- AI CHAT SYSTEM ---
-    async function handleChatSubmit(e) {
-      e.preventDefault();
-      const inputEl = document.getElementById('chat-input');
-      const userText = inputEl.value.trim();
-      if (!userText) return;
-
-      appendMessage('user', userText);
-      inputEl.value = '';
-
-      const aiMsgId = 'msg-' + Date.now();
-      appendMessage('ai', '<i class="fa-solid fa-circle-notch fa-spin text-violet-400"></i> Thinking...', aiMsgId);
-
-      const provider = localStorage.getItem('nexus_provider') || 'pollinations';
-
-      try {
-        let aiResponseText = "";
-
-        if (provider === 'pollinations') {
-          // Pollinations.ai Text API (No API keys or logins)
-          chatHistory.push({ role: 'user', content: userText });
-
-          const res = await fetch('https://text.pollinations.ai/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: chatHistory,
-              model: 'openai'
-            })
-          });
-
-          if (!res.ok) throw new Error('Pollinations service response error');
-          aiResponseText = await res.text();
-          chatHistory.push({ role: 'assistant', content: aiResponseText });
-
-        } else {
-          // Custom API key endpoint
-          const apiUrl = localStorage.getItem('nexus_api_url');
-          const apiKey = localStorage.getItem('nexus_api_key');
-          const modelName = localStorage.getItem('nexus_model_name') || 'gpt-4o-mini';
-
-          chatHistory.push({ role: 'user', content: userText });
-          const res = await fetch(`${apiUrl}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model: modelName,
-              messages: chatHistory
-            })
-          });
-          const data = await res.json();
-          aiResponseText = data.choices[0].message.content;
-          chatHistory.push({ role: 'assistant', content: aiResponseText });
-        }
-
-        updateMessage(aiMsgId, formatResponse(aiResponseText));
-      } catch (err) {
-        updateMessage(aiMsgId, `<span class="text-rose-400">Error: ${err.message || 'Failed to fetch AI response.'}</span>`);
-      }
+    function copyToClipboard(text) {
+      const hiddenInput = document.createElement('textarea');
+      hiddenInput.value = text;
+      document.body.appendChild(hiddenInput);
+      hiddenInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(hiddenInput);
     }
 
-    function appendMessage(role, content, customId = null) {
-      const container = document.getElementById('chat-messages');
-      const wrapper = document.createElement('div');
-      wrapper.className = `flex gap-3 max-w-3xl ${role === 'user' ? 'ml-auto flex-row-reverse' : ''}`;
-      if (customId) wrapper.id = customId;
+    function formatMarkdown(text) {
+      // Code block formatting
+      let formatted = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+        const escapedCode = escapeHtml(code.trim());
+        return `
+          <div class="relative bg-nxDark-bg border border-nxDark-border rounded-xl my-2 overflow-hidden">
+            <div class="flex justify-between items-center px-3 py-1.5 bg-nxDark-surface text-[11px] text-slate-400 font-mono border-b border-nxDark-border">
+              <span>${lang || 'code'}</span>
+              <button onclick="copyToClipboard(\`${escapedCode.replace(/`/g, '\\`')}\`)" class="hover:text-white flex items-center gap-1">
+                <i class="fa-regular fa-copy"></i> Copy
+              </button>
+            </div>
+            <pre class="p-3 font-mono text-xs text-blue-300 overflow-x-auto"><code>${escapedCode}</code></pre>
+          </div>
+        `;
+      });
 
-      const avatar = role === 'user' 
-        ? `<div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0"><i class="fa-solid fa-user text-xs"></i></div>`
-        : `<div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white shrink-0"><i class="fa-solid fa-robot text-xs"></i></div>`;
-
-      const msgBg = role === 'user' 
-        ? 'bg-violet-600 text-white rounded-tr-none' 
-        : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none';
-
-      wrapper.innerHTML = `
-        ${avatar}
-        <div class="${msgBg} p-4 rounded-2xl text-sm leading-relaxed shadow-sm overflow-x-auto">
-          ${content}
-        </div>
-      `;
-      container.appendChild(wrapper);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function updateMessage(id, newContent) {
-      const el = document.getElementById(id);
-      if (el) {
-        const bubble = el.querySelector('div:last-child');
-        bubble.innerHTML = newContent;
-      }
-    }
-
-    function formatResponse(text) {
-      return text
-        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs text-violet-300 my-2 overflow-x-auto"><code>$2</code></pre>')
-        .replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1.5 py-0.5 rounded text-xs font-mono text-violet-300">$1</code>')
+      return formatted
+        .replace(/`([^`]+)`/g, '<code class="bg-nxDark-hover px-1.5 py-0.5 rounded text-xs font-mono text-blue-300">$1</code>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-slate-100">$1</strong>')
+        .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="rounded-2xl border border-nxDark-border my-2 max-w-full h-auto shadow-lg" onerror="this.src=\'https://placehold.co/600x400/18181b/ffffff?text=Image+Render+Failed\'" />')
         .replace(/\n/g, '<br/>');
     }
 
-    function clearChat() {
-      chatHistory = [];
-      document.getElementById('chat-messages').innerHTML = `
-        <div class="flex gap-3 max-w-3xl">
-          <div class="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white shrink-0">
-            <i class="fa-solid fa-robot text-sm"></i>
-          </div>
-          <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none text-slate-200 text-sm leading-relaxed shadow-sm">
-            Chat cleared! Ready for a new topic.
-          </div>
-        </div>`;
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    // --- AI IMAGE GENERATOR ---
-    function generateImage() {
-      const prompt = document.getElementById('img-prompt').value.trim();
-      if (!prompt) return alert('Please enter an image prompt first.');
+    async function sendPrompt() {
+      const inputEl = document.getElementById('user-input');
+      let promptText = inputEl.value.trim();
 
-      const model = document.getElementById('img-model').value;
-      const dimensions = document.getElementById('img-dimensions').value.split('x');
-      const seed = document.getElementById('img-seed').value || Math.floor(Math.random() * 999999);
+      if (!promptText && !attachedFile) return;
 
-      const width = dimensions[0];
-      const height = dimensions[1];
+      if (attachedFile) {
+        promptText = `[Attached File: ${attachedFile.name}]\n\n${attachedFile.content}\n\nUser Question: ${promptText}`;
+        removeAttachedFile();
+      }
 
-      const resultCard = document.getElementById('img-result-card');
-      const loader = document.getElementById('img-loader');
-      const imgEl = document.getElementById('generated-img');
-      const downloadBtn = document.getElementById('download-img-btn');
+      const activeChat = chats.find(c => c.id === currentChatId);
+      if (!activeChat) return;
 
-      resultCard.classList.remove('hidden');
-      loader.classList.remove('hidden');
-      imgEl.classList.add('opacity-0');
+      if (activeChat.messages.length === 0) {
+        activeChat.title = promptText.slice(0, 28) || 'New Chat';
+      }
 
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true`;
+      activeChat.messages.push({ role: 'user', content: promptText });
+      saveChatsToStorage();
 
-      imgEl.src = imageUrl;
-      downloadBtn.href = imageUrl;
+      document.getElementById('welcome-screen').classList.add('hidden');
+      document.getElementById('messages-container').classList.remove('hidden');
+      renderMessages(activeChat.messages);
 
-      imgEl.onload = () => {
-        loader.classList.add('hidden');
-        imgEl.classList.remove('opacity-0');
-      };
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+
+      // Append Loading Indicator
+      const container = document.getElementById('messages-container');
+      const aiWrapper = document.createElement('div');
+      aiWrapper.className = 'flex gap-3 md:gap-4 justify-start';
+      const aiMsgId = 'ai-msg-' + Date.now();
+      aiWrapper.innerHTML = `
+        <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-1">
+          N
+        </div>
+        <div id="${aiMsgId}" class="flex-1 max-w-[90%] text-slate-300 text-sm leading-relaxed">
+          <i class="fa-solid fa-circle-notch fa-spin text-blue-500 text-xs"></i>
+        </div>
+      `;
+      container.appendChild(aiWrapper);
+
+      const viewport = document.getElementById('chat-viewport');
+      viewport.scrollTop = viewport.scrollHeight;
+
+      try {
+        const reply = await callPollinationsTextAPI(activeChat.messages);
+        activeChat.messages.push({ role: 'assistant', content: reply });
+        saveChatsToStorage();
+        document.getElementById(aiMsgId).innerHTML = formatMarkdown(reply);
+      } catch (err) {
+        document.getElementById(aiMsgId).innerHTML = `<span class="text-rose-400 font-medium">Request failed: ${err.message}</span>`;
+      }
     }
 
-    // --- CODE SANDBOX ---
-    function runCodeSandbox() {
-      const code = document.getElementById('sandbox-code-input').value;
-      const iframe = document.getElementById('sandbox-iframe');
-      iframe.srcdoc = code;
+    async function callPollinationsTextAPI(messages) {
+      const formattedMessages = [
+        { role: 'system', content: settings.systemPrompt || 'You are NEXUS, an AI assistant.' },
+        ...messages.map(m => ({ role: m.role, content: m.content }))
+      ];
+      
+      const response = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: formattedMessages,
+          seed: Math.floor(Math.random() * 100000)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Public Engine Error (' + response.status + ')');
+      }
+
+      const text = await response.text();
+      return text || 'No response generated.';
     }
 
-    function loadSampleCode() {
-      document.getElementById('sandbox-code-input').value = `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { background: #000; color: #0f0; font-family: monospace; text-align: center; padding-top: 20%; }
-    h2 { animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: 0; } }
-  </style>
-</head>
-<body>
-  <h2>[ NEXUS CODE MATRIX ]</h2>
-  <p>System operational. Build anything.</p>
-</body>
-</html>`;
-      runCodeSandbox();
+    function togglePlusMenu() {
+      const menu = document.getElementById('plus-menu');
+      menu.classList.toggle('hidden');
     }
 
-    // --- SPEECH RECOGNITION (INPUT ONLY) ---
-    function setupSpeechRecognition() {
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
+    function triggerFileInput() {
+      togglePlusMenu();
+      document.getElementById('file-input').click();
+    }
 
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          document.getElementById('chat-input').value = transcript;
-          toggleVoiceInput();
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        attachedFile = {
+          name: file.name,
+          content: evt.target.result
         };
+        document.getElementById('file-chip-name').textContent = file.name;
+        document.getElementById('file-chip').classList.remove('hidden');
+      };
+      reader.readAsText(file);
+    }
 
-        recognition.onerror = () => toggleVoiceInput();
+    function removeAttachedFile() {
+      attachedFile = null;
+      document.getElementById('file-chip').classList.add('hidden');
+      document.getElementById('file-input').value = '';
+    }
+
+    function openImageModal() {
+      togglePlusMenu();
+      document.getElementById('image-modal').classList.remove('hidden');
+    }
+
+    function closeImageModal() {
+      document.getElementById('image-modal').classList.add('hidden');
+    }
+
+    function confirmImageGeneration() {
+      const prompt = document.getElementById('img-prompt-input').value.trim();
+      if (!prompt) return;
+
+      closeImageModal();
+      document.getElementById('img-prompt-input').value = '';
+
+      const seed = Math.floor(Math.random() * 1000000);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+      
+      const activeChat = chats.find(c => c.id === currentChatId);
+      if (!activeChat) return;
+
+      const imgMarkdown = `Generated Image Preview:\n\n![${prompt}](${imageUrl})`;
+      
+      activeChat.messages.push({ role: 'user', content: `Generate AI Artwork: ${prompt}` });
+      activeChat.messages.push({ role: 'assistant', content: imgMarkdown });
+      saveChatsToStorage();
+
+      document.getElementById('welcome-screen').classList.add('hidden');
+      document.getElementById('messages-container').classList.remove('hidden');
+      renderMessages(activeChat.messages);
+    }
+
+    function startVoiceChatMode() {
+      const modal = document.getElementById('voice-modal');
+      modal.classList.remove('hidden');
+      isVoiceActive = true;
+
+      initVoiceRecognition();
+    }
+
+    function closeVoiceChatMode() {
+      const modal = document.getElementById('voice-modal');
+      modal.classList.add('hidden');
+      isVoiceActive = false;
+
+      if (recognition) recognition.stop();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    }
+
+    function toggleVoiceMute() {
+      isVoiceMuted = !isVoiceMuted;
+      const btn = document.getElementById('voice-mute-btn');
+      btn.innerHTML = isVoiceMuted ? '<i class="fa-solid fa-microphone-slash text-rose-400"></i>' : '<i class="fa-solid fa-microphone text-slate-300"></i>';
+    }
+
+    function initVoiceRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        document.getElementById('voice-transcript').textContent = 'Web Speech Recognition is not supported on this browser.';
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      const orb = document.getElementById('voice-orb');
+      const statusEl = document.getElementById('voice-status');
+      const transcriptEl = document.getElementById('voice-transcript');
+
+      recognition.onstart = () => {
+        orb.className = 'blue-orb listening';
+        statusEl.textContent = 'Listening...';
+      };
+
+      recognition.onresult = (event) => {
+        let interimText = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          interimText += event.results[i][0].transcript;
+        }
+        transcriptEl.textContent = interimText;
+        orb.className = 'blue-orb speaking';
+      };
+
+      recognition.onend = async () => {
+        const spokenText = transcriptEl.textContent.trim();
+        if (spokenText && spokenText !== 'Speak now...' && isVoiceActive && !isVoiceMuted) {
+          statusEl.textContent = 'Thinking...';
+          orb.className = 'blue-orb listening';
+          
+          await handleVoiceAIQuery(spokenText);
+        } else if (isVoiceActive) {
+          recognition.start();
+        }
+      };
+
+      recognition.start();
+    }
+
+    async function handleVoiceAIQuery(userInput) {
+      const orb = document.getElementById('voice-orb');
+      const statusEl = document.getElementById('voice-status');
+      const transcriptEl = document.getElementById('voice-transcript');
+
+      try {
+        const systemVoiceMessage = [
+          { role: 'system', content: 'You are NEXUS Voice. Give ultra-concise 1 or 2 sentence spoken answers.' },
+          { role: 'user', content: userInput }
+        ];
+
+        const reply = await callPollinationsTextAPI(systemVoiceMessage);
+
+        transcriptEl.textContent = reply;
+        statusEl.textContent = 'Speaking...';
+
+        speakVoiceOutput(reply);
+      } catch (err) {
+        transcriptEl.textContent = 'Voice query error. Re-listening...';
+        if (isVoiceActive) recognition.start();
       }
     }
 
-    function toggleVoiceInput() {
-      if (!recognition) return alert('Speech recognition is not supported in this browser.');
-      const micBtn = document.getElementById('mic-btn');
-      if (!isVoiceActive) {
-        recognition.start();
-        isVoiceActive = true;
-        micBtn.classList.add('text-rose-500', 'animate-pulse');
-      } else {
-        recognition.stop();
-        isVoiceActive = false;
-        micBtn.classList.remove('text-rose-500', 'animate-pulse');
-      }
+    function speakVoiceOutput(text) {
+      if (!('speechSynthesis' in window)) return;
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (synthesisVoice) utterance.voice = synthesisVoice;
+
+      const orb = document.getElementById('voice-orb');
+
+      utterance.onstart = () => {
+        orb.className = 'blue-orb speaking';
+      };
+
+      utterance.onend = () => {
+        orb.className = 'blue-orb listening';
+        document.getElementById('voice-status').textContent = 'Listening...';
+        document.getElementById('voice-transcript').textContent = 'Speak now...';
+        if (isVoiceActive) recognition.start();
+      };
+
+      window.speechSynthesis.speak(utterance);
     }
 
-    // --- SETTINGS MANAGEMENT ---
+    function openSettingsModal() {
+      document.getElementById('system-prompt-input').value = settings.systemPrompt || '';
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
     function saveSettings() {
-      const provider = document.getElementById('setting-provider').value;
-      localStorage.setItem('nexus_provider', provider);
-
-      if (provider === 'custom') {
-        document.getElementById('custom-api-container').classList.remove('hidden');
-        localStorage.setItem('nexus_api_url', document.getElementById('setting-api-url').value.trim());
-        localStorage.setItem('nexus_api_key', document.getElementById('setting-api-key').value.trim());
-        localStorage.setItem('nexus_model_name', document.getElementById('setting-model-name').value.trim());
-        document.getElementById('current-engine-label').textContent = 'Custom API';
-      } else {
-        document.getElementById('custom-api-container').classList.add('hidden');
-        document.getElementById('current-engine-label').textContent = 'Pollinations (Account Free)';
-      }
+      settings.systemPrompt = document.getElementById('system-prompt-input').value.trim();
+      saveSettingsToStorage();
+      closeSettingsModal();
     }
 
-    function loadSettings() {
-      const provider = localStorage.getItem('nexus_provider') || 'pollinations';
-      document.getElementById('setting-provider').value = provider;
-      document.getElementById('setting-api-url').value = localStorage.getItem('nexus_api_url') || '';
-      document.getElementById('setting-api-key').value = localStorage.getItem('nexus_api_key') || '';
-      document.getElementById('setting-model-name').value = localStorage.getItem('nexus_model_name') || '';
-
-      if (provider === 'custom') {
-        document.getElementById('custom-api-container').classList.remove('hidden');
-        document.getElementById('current-engine-label').textContent = 'Custom API';
-      }
+    function saveSettingsToStorage() {
+      localStorage.setItem('nexus_settings_v3', JSON.stringify(settings));
     }
   </script>
 </body>

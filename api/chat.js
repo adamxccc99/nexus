@@ -13,6 +13,10 @@ export default async function handler(req, res) {
   try {
     const body = req.body || {};
     const messages = Array.isArray(body.messages) ? body.messages : [];
+    const model = typeof body.model === 'string' && body.model.trim()
+      ? body.model.trim()
+      : 'openai/gpt-oss-20b';
+    const webSearch = Boolean(body.webSearch);
 
     if (!messages.length) {
       return res.status(400).json({ error: 'messages must be a non-empty array.' });
@@ -25,10 +29,12 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
+        model,
         messages,
-        tools: [{ type: 'browser_search' }],
-        citation_options: 'enabled'
+        ...(webSearch ? {
+          tools: [{ type: 'browser_search' }],
+          citation_options: 'enabled'
+        } : {})
       })
     });
 

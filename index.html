@@ -249,12 +249,23 @@
             <i class="fa-solid fa-paperclip text-blue-400 text-sm"></i>
             <span>Attach File / Document</span>
           </button>
+          <button onclick="toggleWebSearch()" id="web-search-menu-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-nxDark-hover text-xs font-medium text-slate-200 transition-colors">
+            <i class="fa-solid fa-globe text-emerald-400 text-sm"></i>
+            <span>Web Search <span id="web-search-status" class="text-[10px] text-slate-500">(off)</span></span>
+          </button>
           <button onclick="startVoiceChatMode()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-nxDark-hover text-xs font-medium text-slate-200 transition-colors">
             <i class="fa-solid fa-waveform-lines text-indigo-400 text-sm"></i>
             <span>Voice Chat Mode</span>
           </button>
         </div>
         <input type="file" id="file-input" class="hidden" accept=".txt,.js,.py,.csv,.md,.html,.json,.css,.ts" onchange="handleFileSelect(event)" />
+
+        <!-- Web Search Status -->
+        <div id="web-search-chip" class="hidden mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-800/70 text-xs text-emerald-300">
+          <i class="fa-solid fa-globe text-emerald-400"></i>
+          <span>Web search enabled</span>
+          <button onclick="toggleWebSearch()" class="ml-1 hover:text-white" title="Disable web search"><i class="fa-solid fa-xmark"></i></button>
+        </div>
 
         <!-- Floating Action Pill -->
         <div class="relative bg-nxDark-surface border border-nxDark-border rounded-3xl shadow-xl flex items-end p-2 transition-all focus-within:border-slate-500">
@@ -387,6 +398,7 @@
     let chats = JSON.parse(localStorage.getItem('nexus_chats_v3') || '[]');
     let currentChatId = null;
     let attachedFile = null;
+    let webSearchEnabled = false;
     let settings = JSON.parse(localStorage.getItem('nexus_settings_v3') || '{"theme":"dark","systemPrompt":"You are NEXUS, an intelligent, helpful, and ultra-concise AI assistant."}');
 
     // Voice Engine State
@@ -650,7 +662,7 @@
       viewport.scrollTop = viewport.scrollHeight;
 
       try {
-        const reply = await callPollinationsTextAPI(activeChat.messages);
+        const reply = await callPollinationsTextAPI(activeChat.messages, { webSearch: webSearchEnabled });
         activeChat.messages.push({ role: 'assistant', content: reply });
         saveChatsToStorage();
         document.getElementById(aiMsgId).innerHTML = formatMarkdown(reply);
@@ -659,12 +671,34 @@
       }
     }
 
-    async function callPollinationsTextAPI(messages) {
+    async function callPollinationsTextAPI(messages, options = {}) {
+      if (options.webSearch) {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [
+              { role: 'system', content: settings.systemPrompt || 'You are NEXUS, an intelligent, helpful, and concise AI assistant.' },
+              ...messages.map(m => ({ role: m.role, content: m.content }))
+            ],
+            webSearch: true
+          })
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.error || 'NEXUS web search request failed (' + response.status + ')');
+        }
+
+        const data = await response.json();
+        return data.content || 'No response generated.';
+      }
+
       const formattedMessages = [
         { role: 'system', content: settings.systemPrompt || 'You are NEXUS, an AI assistant.' },
         ...messages.map(m => ({ role: m.role, content: m.content }))
       ];
-      
+
       const response = await fetch('https://text.pollinations.ai/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -680,6 +714,26 @@
 
       const text = await response.text();
       return text || 'No response generated.';
+    }
+
+    function toggleWebSearch() {
+      webSearchEnabled = !webSearchEnabled;
+
+      const chip = document.getElementById('web-search-chip');
+      const status = document.getElementById('web-search-status');
+      const menuBtn = document.getElementById('web-search-menu-btn');
+
+      if (chip) chip.classList.toggle('hidden', !webSearchEnabled);
+      if (status) {
+        status.textContent = webSearchEnabled ? '(on)' : '(off)';
+        status.className = webSearchEnabled ? 'text-[10px] text-emerald-400' : 'text-[10px] text-slate-500';
+      }
+      if (menuBtn) {
+        menuBtn.classList.toggle('bg-emerald-950/40', webSearchEnabled);
+        menuBtn.classList.toggle('text-emerald-200', webSearchEnabled);
+      }
+
+      document.getElementById('plus-menu').classList.add('hidden');
     }
 
     function togglePlusMenu() {
@@ -826,7 +880,7 @@
           { role: 'user', content: userInput }
         ];
 
-        const reply = await callPollinationsTextAPI(systemVoiceMessage);
+        const reply = await callPollinationsTextAPI(systemVoiceMessage, { webSearch: false });
 
         transcriptEl.textContent = reply;
         statusEl.textContent = 'Speaking...';

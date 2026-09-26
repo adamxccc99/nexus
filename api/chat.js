@@ -21,13 +21,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'messages must be a non-empty array.' });
     }
 
+    const requestBody = { model, messages };
+    if (body.webSearch === true) {
+      requestBody.tools = [{ type: 'browser_search' }];
+      requestBody.tool_choice = 'required';
+    }
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ model, messages })
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();

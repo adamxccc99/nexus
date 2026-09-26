@@ -679,26 +679,63 @@
     }
 
     async function callGroqAPI(messages) {
-      const response = await fetch('/api/chat', {
+      const payload = {
+        model: settings.groqModel || 'openai/gpt-oss-20b',
+        apiKey: settings.groqApiKey || '',
+        messages: [
+          { role: 'system', content: settings.systemPrompt || 'You are NEXUS, an intelligent, helpful, and concise AI assistant.' },
+          ...messages.map(m => ({ role: m.role, content: m.content }))
+        ]
+      };
+
+      if (!payload.apiKey) {
+        throw new Error('Add your Groq API key in Settings, then click Save & Close.');
+      }
+
+      // Use the Vercel function when deployed there.
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          return data.content || 'No response generated.';
+        }
+
+        // GitHub Pages has no /api serverless function, so fall through
+        // to the browser-side Groq request using the user's own key.
+        if (![404, 405, 500, 502, 503].includes(response.status)) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.error || 'Groq request failed (' + response.status + ')');
+        }
+      } catch (error) {
+        // Network errors on static hosting also use the direct Groq fallback.
+        if (error?.message && !/Failed to fetch|NetworkError|Load failed/i.test(error.message)) {
+          throw error;
+        }
+      }
+
+      const directResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': 'Bearer ' + payload.apiKey,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          model: settings.groqModel || 'openai/gpt-oss-20b',
-          apiKey: settings.groqApiKey || '',
-          messages: [
-            { role: 'system', content: settings.systemPrompt || 'You are NEXUS, an intelligent, helpful, and concise AI assistant.' },
-            ...messages.map(m => ({ role: m.role, content: m.content }))
-          ],
+          model: payload.model,
+          messages: payload.messages
         })
       });
 
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
-        throw new Error(errorBody.error || 'Groq request failed (' + response.status + ')');
+      const directData = await directResponse.json().catch(() => ({}));
+      if (!directResponse.ok) {
+        throw new Error(directData?.error?.message || 'Groq request failed (' + directResponse.status + ')');
       }
 
-      const data = await response.json();
-      return data.content || 'No response generated.';
+      return directData?.choices?.[0]?.message?.content || 'No response generated.';
     }
 
     function togglePlusMenu() {

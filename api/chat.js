@@ -3,15 +3,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GROQ_API_KEY is not configured on the server.' });
-  }
-
   try {
     const body = req.body || {};
     const apiKey = typeof body.apiKey === 'string' && body.apiKey.trim()
       ? body.apiKey.trim()
       : process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Enter your Groq API key in NEXUS Settings.' });
+    }
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const model = typeof body.model === 'string' && body.model.trim()
       ? body.model.trim()
